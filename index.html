@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Somchai's Daily Carbon Choices</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue, remove }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ใช้ค่า Config จากโปรเจกต์ Somchai Carbon Footprint ของคุณ
+  const firebaseConfig = {
+    apiKey: "AIzaSyDfGFQydex_o_6T_AbcfQI3mvBa8zcyYKk",
+    authDomain: "somchai-carbon-footprint.firebaseapp.com",
+    databaseURL: "https://somchai-carbon-footprint-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "somchai-carbon-footprint",
+    storageBucket: "somchai-carbon-footprint.firebasestorage.app",
+    messagingSenderId: "347331468738",
+    appId: "1:347331468738:web:3f89a1ac02f82d11208a5b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  const COLLECTION = "somchai_submissions";
+
+  window._fbPush   = (data) => push(ref(db, COLLECTION), data);
+  window._fbListen = (cb)   => onValue(ref(db, COLLECTION), snap => {
+    const raw = snap.val();
+    const list = raw ? Object.entries(raw).map(([k,v]) => ({ _key: k, ...v })) : [];
+    cb(list);
+  });
+  window._fbDelete = (key) => remove(ref(db, `${COLLECTION}/${key}`));
+  window._fbReady  = true;
+  document.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:linear-gradient(135deg,#e0f7fa 0%,#fce4ec 50%,#f3e5f5 100%);min-height:100vh;color:#2d3436}
+.page{display:none}.page.active{display:block}
+#ws{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+.ws-head{text-align:center;margin-bottom:20px}
+.ws-head h1{font-family:'Fredoka One',cursive;font-size:clamp(1.5rem,5vw,2.4rem);color:#2563eb;text-shadow:3px 3px 0 #bfdbfe}
+.group-box{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.group-box input{flex:1;padding:10px;border:2.5px solid #e5e7eb;border-radius:10px;font-weight:700}
+.rounds-grid{display:grid;gap:14px;margin-bottom:18px}
+.round-card{background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden}
+.round-head{display:flex;align-items:center;gap:12px;padding:13px 16px;color:#fff}
+.r1 .round-head{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.r2 .round-head{background:linear-gradient(135deg,#22c55e,#16a34a)}
+.opt-label, .meal-opt{display:flex;align-items:center;gap:10px;padding:10px;border:2px solid #e5e7eb;border-radius:11px;cursor:pointer;margin-bottom:5px;font-weight:700}
+.opt-label.selected, .meal-opt.selected{border-color:#3b82f6;background:#eff6ff}
+.total-bar{background:#1e3a8a;border-radius:16px;padding:18px 22px;display:flex;justify-content:space-between;color:#fff;margin-bottom:20px}
+.total-bar .val{font-family:'Fredoka One',cursive;font-size:1.5rem;color:#fbbf24}
+.btn-submit{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;padding:14px 44px;border-radius:50px;font-family:'Fredoka One',cursive;font-size:1.2rem;cursor:pointer;width:100%}
+.sub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.sub-card{background:#fff;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,.1);margin-bottom:10px;overflow:hidden}
+.card-hd{background:#1e40af;color:#fff;padding:10px;display:flex;justify-content:space-between}
+.card-bd{padding:15px;text-align:center}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;display:none;z-index:2000}
+</style>
+</head>
+<body>
+
+<div id="ws" class="page active">
+  <div class="ws-head">
+    <h1>🌿 Somchai's Carbon Choices</h1>
+    <p>ช่วยสมชายเลือกกิจกรรมใน 1 วัน เพื่อดูฟุตพริ้นท์รวมของกลุ่มเรา!</p>
+  </div>
+
+  <div class="group-box">
+    <label>👥 ชื่อกลุ่ม:</label>
+    <input type="text" id="groupInput" placeholder="พิมพ์ชื่อกลุ่มที่นี่..." maxlength="50">
+  </div>
+
+  <div class="rounds-grid">
+    <div class="round-card r1">
+      <div class="round-head"><h3>1. การเดินทาง</h3></div>
+      <div class="round-body" style="padding:15px">
+        <div id="opts-1">
+          <label class="opt-label" onclick="selectOpt(this,1,1200)"><input type="radio" name="r1"> รถยนต์ส่วนตัว (1,200g)</label>
+          <label class="opt-label" onclick="selectOpt(this,1,400)"><input type="radio" name="r1"> รถแดง / รถเมล์ (400g)</label>
+          <label class="opt-label" onclick="selectOpt(this,1,100)"><input type="radio" name="r1"> รถไฟฟ้า มช. (100g)</label>
+          <label class="opt-label" onclick="selectOpt(this,1,0)"><input type="radio" name="r1"> เดิน / ปั่นจักรยาน (0g)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="round-card r2">
+      <div class="round-head"><h3>2. อาหาร</h3></div>
+      <div class="round-body" style="padding:15px">
+        <div id="meals">
+          <label class="meal-opt" onclick="toggleMeal(this)"><input type="checkbox" value="3000"> เมนูเนื้อวัว (3,000g)</label>
+          <label class="meal-opt" onclick="toggleMeal(this)"><input type="checkbox" value="1600"> เมนูเนื้อหมู (1,600g)</label>
+          <label class="meal-opt" onclick="toggleMeal(this)"><input type="checkbox" value="400"> เมนูผัก/ไร้เนื้อสัตว์ (400g)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="total-bar">
+    <span>รวมค่าคาร์บอน:</span>
+    <span class="val" id="totalDisplay">0 gCO₂e</span>
+  </div>
+
+  <button class="btn-submit" onclick="submitAnswers()">✅ ส่งคะแนนเข้ากระดานรวม</button>
+  <p onclick="showBoard()" style="text-align:center; color:#666; cursor:pointer; margin-top:15px; text-decoration:underline">📊 ดูคะแนนของเพื่อนๆ ทั้งห้อง</p>
+</div>
+
+<div id="board" class="page">
+  <div class="ws-head">
+    <h1>📊 สรุปผลทั้งห้องเรียน</h1>
+  </div>
+  <div style="text-align:center; margin-bottom:20px;">
+    <button onclick="showWorksheet()" style="padding:8px 20px; border-radius:20px; cursor:pointer">← กลับไปหน้าทำกิจกรรม</button>
+  </div>
+  <div class="sub-grid" id="subGrid"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let cv={1:null,2:null};
+function selectOpt(lbl,round,val){
+  document.querySelectorAll(`#opts-${round} .opt-label`).forEach(l=>l.classList.remove('selected'));
+  lbl.classList.add('selected');
+  cv[round]=val;
+  updateTotal();
+}
+function toggleMeal(lbl){
+  lbl.classList.toggle('selected',lbl.querySelector('input').checked);
+  let tot=0, any=false;
+  document.querySelectorAll('#meals input[type=checkbox]').forEach(c=>{if(c.checked){tot+=parseInt(c.value); any=true;}});
+  cv[2]=any?tot:null;
+  updateTotal();
+}
+function updateTotal(){
+  let t=0; for(let r in cv) if(cv[r]!==null) t+=cv[r];
+  document.getElementById('totalDisplay').textContent=t.toLocaleString()+' gCO₂e';
+}
+async function submitAnswers(){
+  const gname=document.getElementById('groupInput').value.trim();
+  if(!gname){alert('กรุณาใส่ชื่อกลุ่มก่อนส่งครับ!'); return;}
+  const sub={groupName:gname, total:Object.values(cv).reduce((a,b)=>a+(b||0),0), time:new Date().toLocaleTimeString()};
+  try{
+    await window._fbPush(sub);
+    alert('ส่งข้อมูลสำเร็จแล้ว!');
+    showBoard();
+  }catch(e){alert('เกิดข้อผิดพลาด: '+e.message);}
+}
+function showBoard(){
+  document.getElementById('ws').classList.remove('active');
+  document.getElementById('board').classList.add('active');
+  window._fbListen(renderBoard);
+}
+function showWorksheet(){
+  document.getElementById('board').classList.remove('active');
+  document.getElementById('ws').classList.add('active');
+}
+function renderBoard(subs){
+  const grid=document.getElementById('subGrid');
+  grid.innerHTML='';
+  subs.forEach(sub=>{
+    const card=document.createElement('div');
+    card.className='sub-card';
+    card.innerHTML=`<div class="card-hd"><span>👥 ${sub.groupName}</span><span>${sub.time}</span></div>
+      <div class="card-bd"><div style="font-size:1.8rem; color:#f59e0b; font-family:'Fredoka One'">${sub.total.toLocaleString()}</div><div style="font-size:0.8rem; color:#999">gCO₂e</div></div>`;
+    grid.appendChild(card);
+  });
+}
+</script>
+</body>
+</html>
